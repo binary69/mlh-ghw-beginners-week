@@ -31,7 +31,7 @@ class Pet{
         }
     }
 
-    public void stats(){
+    public void getStatus(){
         System.out.println("Happiness of " + this.name + " is: " + this.happiness);
         System.out.println("Hunger of " + this.name + " is: " + this.hunger);
     }
