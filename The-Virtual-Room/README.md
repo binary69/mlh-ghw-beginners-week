@@ -98,12 +98,5 @@ Troubleshooting
 Credits
 -------
 - Built with Three.js (r128) and vanilla JavaScript in a single HTML file.
-
-License
--------
-- This demo is provided without warranty; you may reuse and adapt the code for learning and prototyping.
-
-If you want, I can next:
-- Add the cursor style changes and a loading indicator to `index.html`.
-- Add a small `serve` helper or package.json for easier local testing.
+- Made using copilot as a part of ghw beginners week challenge
 
