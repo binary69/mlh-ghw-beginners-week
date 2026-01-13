@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Virtual Room</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="instructions">
+        <h3>Controls</h3>
+        <p>Mouse click & drag to move objects</p>
+        <p>Arrow keys or WASD: rotate camera</p>
+        <p>Up/W: move camera higher</p>
+        <p>Down/S: move camera lower</p>
+    </div>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Room setup
+        const floorGeometry = new THREE.PlaneGeometry(30, 30);
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a2e });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x162447 });
+        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 15), wallMaterial);
+        backWall.position.set(0, 7.5, -15);
+        backWall.rotation.y = Math.PI;
+        scene.add(backWall);
+
+        const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 15), wallMaterial);
+        leftWall.position.set(-15, 7.5, 0);
+        leftWall.rotation.y = Math.PI / 2;
+        scene.add(leftWall);
+
+        const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 15), wallMaterial);
+        rightWall.position.set(15, 7.5, 0);
+        rightWall.rotation.y = -Math.PI / 2;
+        scene.add(rightWall);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7.5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0xff00ff, 1, 100);
+        pointLight.position.set(0, 10, 0);
+        scene.add(pointLight);
+
+        // Movable Objects
+        const createCube = () => {
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const material = new THREE.MeshStandardMaterial({ color: 0xff0055 });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(0, 1, 0);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            return cube;
+        };
+
+        const createSphere = (color, position) => {
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ color });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(...position);
+            sphere.castShadow = true;
+            sphere.receiveShadow = true;
+            return sphere;
+        };
+
+        const cube = createCube();
+        scene.add(cube);
+        const sphere1 = createSphere(0x00ffff, [5, 1, 5]);
+        const sphere2 = createSphere(0xffff00, [-5, 1, -5]);
+        scene.add(sphere1);
+        scene.add(sphere2);
+
+        // Camera setup
+        camera.position.set(0, 5, 15);
+        camera.lookAt(0, 0, 0);
+
+        // Drag and drop functionality
+        let selectedObject = null;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const onMouseDown = (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            if (intersects.length > 0) {
+                selectedObject = intersects[0].object;
+                selectedObject.material.emissive.set(0x555555);
+            }
+        };
+
+        const onMouseMove = (event) => {
+            if (selectedObject) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(floor);
+                if (intersects.length > 0) {
+                    selectedObject.position.copy(intersects[0].point);
+                }
+            }
+        };
+
+        const onMouseUp = () => {
+            if (selectedObject) {
+                selectedObject.material.emissive.set(0x000000);
+                selectedObject = null;
+            }
+        };
+
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+
+        // Keyboard controls
+        const onKeyDown = (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                    camera.position.y += 0.1;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    camera.position.y -= 0.1;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    camera.rotation.y += 0.05;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    camera.rotation.y -= 0.05;
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+
+        // Animation loop
+        const animate = () => {
+            requestAnimationFrame(animate);
+            if (sphere1) sphere1.rotation.y += 0.01;
+            if (sphere2) sphere2.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
